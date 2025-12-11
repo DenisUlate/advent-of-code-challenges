@@ -1,7 +1,10 @@
 const fs = require("fs");
 
 // Paso 1: Leer el archivo de input (limpiando \r de Windows)
-const input = fs.readFileSync("./day-11-reactor-input.txt", "utf-8").trim().replace(/\r/g, "");
+const input = fs
+	.readFileSync("./day-11-reactor-input.txt", "utf-8")
+	.trim()
+	.replace(/\r/g, "");
 
 // Paso 2: Parsear el input y construir el grafo
 function buildGraph(input) {
@@ -19,44 +22,80 @@ function buildGraph(input) {
 const graph = buildGraph(input);
 
 // Paso 3: Buscar caminos de 'svr' a 'out' que pasen por AMBOS 'dac' y 'fft'
-function countPathsWithRequiredNodes(graph, start, end, requiredNodes) {
-	let pathCount = 0;
+// Optimización: DFS con Memoización (Programación Dinámica)
+function countPathsWithRequiredNodesOptimized(
+	graph,
+	start,
+	end,
+	requiredNodes
+) {
+	const memo = new Map();
 
-	// Función recursiva DFS que rastrea el camino actual
-	function dfs(currentNode, path) {
-		// Añadimos el nodo actual al camino
-		path.push(currentNode);
+	// Convertimos requiredNodes a un Set para búsqueda rápida (aunque son pocos)
+	const requiredSet = new Set(requiredNodes);
+
+	function dfs(currentNode, foundMask) {
+		// foundMask es un bitmask o string que representa qué nodos requeridos ya se han encontrado
+		// 0: ninguno, 1: dac found, 2: fft found, 3: both found (si mapeamos dac->bit0, fft->bit1)
+
+		// Generamos una clave única para el estado: NodoActual + MáscaraDeEncontrados
+		const stateKey = `${currentNode}:${foundMask}`;
+
+		if (memo.has(stateKey)) {
+			return memo.get(stateKey);
+		}
 
 		// Caso base: llegamos al destino
 		if (currentNode === end) {
-			// Verificamos si el camino contiene TODOS los nodos requeridos
-			const hasAllRequired = requiredNodes.every((node) => path.includes(node));
-			if (hasAllRequired) {
-				pathCount++;
+			// Verificamos si la máscara indica que encontramos todos
+			// Asumimos que la máscara 3 (binario 11) significa que encontramos los 2 nodos requeridos
+			if (foundMask === 3) {
+				return 1;
 			}
-			path.pop(); // Backtrack
-			return;
+			return 0;
 		}
 
-		// Si el nodo no tiene conexiones salientes, terminamos esta rama
 		if (!graph[currentNode]) {
-			path.pop(); // Backtrack
-			return;
+			return 0;
 		}
 
-		// Exploramos cada conexión del nodo actual
+		let totalPaths = 0;
+
 		for (const neighbor of graph[currentNode]) {
-			dfs(neighbor, path);
+			let newMask = foundMask;
+
+			// Actualizamos la máscara si el vecino es uno de los nodos requeridos
+			if (neighbor === "dac") newMask |= 1; // Bit 0 para 'dac'
+			if (neighbor === "fft") newMask |= 2; // Bit 1 para 'fft'
+
+			totalPaths += dfs(neighbor, newMask);
 		}
 
-		path.pop(); // Backtrack al salir de este nodo
+		// Guardamos en memo
+		memo.set(stateKey, totalPaths);
+		return totalPaths;
 	}
 
-	dfs(start, []);
-	return pathCount;
+	// Estado inicial: revisamos si start es uno de los nodos requeridos (poco probable pero correcto)
+	let initialMask = 0;
+	if (start === "dac") initialMask |= 1;
+	if (start === "fft") initialMask |= 2;
+
+	return dfs(start, initialMask);
 }
 
 // Ejecutar la búsqueda para Part 2
 const requiredNodes = ["dac", "fft"];
-const totalPaths = countPathsWithRequiredNodes(graph, "svr", "out", requiredNodes);
-console.log("Caminos de 'svr' a 'out' que pasan por 'dac' y 'fft':", totalPaths);
+console.time("Execution Time");
+const totalPaths = countPathsWithRequiredNodesOptimized(
+	graph,
+	"svr",
+	"out",
+	requiredNodes
+);
+console.timeEnd("Execution Time");
+
+console.log(
+	"Caminos de 'svr' a 'out' que pasan por 'dac' y 'fft':",
+	totalPaths
+);
