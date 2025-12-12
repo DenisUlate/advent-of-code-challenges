@@ -1,10 +1,7 @@
 const fs = require("fs");
 
 // Paso 1: Leer el archivo de input (limpiando \r de Windows)
-const input = fs
-	.readFileSync("./day-11-reactor-input.txt", "utf-8")
-	.trim()
-	.replace(/\r/g, "");
+const input = fs.readFileSync("./day-11-reactor-input.txt", "utf-8").trim().replace(/\r/g, "");
 
 // Paso 2: Parsear el input y construir el grafo
 function buildGraph(input) {
@@ -23,12 +20,7 @@ const graph = buildGraph(input);
 
 // Paso 3: Buscar caminos de 'svr' a 'out' que pasen por AMBOS 'dac' y 'fft'
 // Optimización: DFS con Memoización (Programación Dinámica)
-function countPathsWithRequiredNodesOptimized(
-	graph,
-	start,
-	end,
-	requiredNodes
-) {
+function countPathsWithRequiredNodesOptimized(graph, start, end, requiredNodes) {
 	const memo = new Map();
 
 	// Convertimos requiredNodes a un Set para búsqueda rápida (aunque son pocos)
@@ -87,15 +79,7 @@ function countPathsWithRequiredNodesOptimized(
 // Ejecutar la búsqueda para Part 2
 const requiredNodes = ["dac", "fft"];
 console.time("Execution Time");
-const totalPaths = countPathsWithRequiredNodesOptimized(
-	graph,
-	"svr",
-	"out",
-	requiredNodes
-);
+const totalPaths = countPathsWithRequiredNodesOptimized(graph, "svr", "out", requiredNodes);
 console.timeEnd("Execution Time");
 
-console.log(
-	"Caminos de 'svr' a 'out' que pasan por 'dac' y 'fft':",
-	totalPaths
-);
+console.log("Caminos de 'svr' a 'out' que pasan por 'dac' y 'fft':", totalPaths);
